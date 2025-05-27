@@ -172,7 +172,7 @@ public class Format {
      * @return {@link String}
      */
 	private static String convertLinks(String s) {
-		String lastCode = DEFAULT_COLOR_CODE;
+		/*String lastCode = DEFAULT_COLOR_CODE;
 		StringBuilder result = new StringBuilder();
 
 		// matches all bukkit formatting codes
@@ -278,8 +278,8 @@ public class Format {
 						",\"underlined\":" + underlineURLs() + ",\"clickEvent\":{\"action\":\"open_url\",\"value\":\""
 								+ url.getFullUrl()
 								+ "\"},\"hoverEvent\":{\"action\":\"show_text\",\"value\":{\"text\":\"\",\"extra\":["
-								+ convertToJsonColors(lastCode + formattedLink) + "]}}"))
-						.append(",");
+								+ convertToJsonColors(lastCode + formattedLink) + "]}}"));
+						//.append(",");
 
 				lastCode = formattingCodeNow;
 			}
@@ -314,8 +314,44 @@ public class Format {
 				result.append(convertToJsonColors(lastCode + s.substring(startIndex)));
 			}
 		}
-
 		return result.toString();
+		*/
+		String remaining = s;
+		String temp = "";
+		int indexLink = -1;
+		int indexLinkEnd = -1;
+		String link = "";
+		String lastCode = DEFAULT_COLOR_CODE;
+
+
+		do {
+			UrlDetector parser = new UrlDetector(remaining, UrlDetectorOptions.Default);
+			List<Url> links = parser.detect();
+			if (!links.isEmpty()) {
+				String l = links.get(0).getOriginalUrl();
+				indexLink = remaining.indexOf(l);
+				indexLinkEnd = indexLink + l.length();
+				link = remaining.substring(indexLink, indexLinkEnd);
+				temp += convertToJsonColors(lastCode + remaining.substring(0, indexLink)) + ",";
+				lastCode = getLastCode(lastCode + remaining.substring(0, indexLink));
+				String https = "";
+				if (ChatColor.stripColor(link).contains("https://"))
+					https = "s";
+				temp += convertToJsonColors(lastCode + link,
+						",\"underlined\":" + underlineURLs()
+								+ ",\"clickEvent\":{\"action\":\"open_url\",\"value\":\"http" + https + "://"
+								+ ChatColor.stripColor(link.replace("http://", "").replace("https://", ""))
+								+ "\"},\"hoverEvent\":{\"action\":\"show_text\",\"value\":{\"text\":\"\",\"extra\":["
+								+ convertToJsonColors(lastCode + link) + "]}}")
+						+ ",";
+				lastCode = getLastCode(lastCode + link);
+				remaining = remaining.substring(indexLinkEnd);
+			} else {
+				temp += convertToJsonColors(lastCode + remaining);
+				break;
+			}
+		} while (true);
+		return temp;
 	}
 
 	public static String getLastCode(String s) {
